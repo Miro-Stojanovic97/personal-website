@@ -71,7 +71,7 @@ export default function Home() {
           </div>
           <div className="col-start-2 row-start-5 col-span-3 py-15">
             <p className="text-white text-center font-italic">
-              [This website is a work in progress. TODO: Responsive design, Adding on-click content modals]
+              [Website is not done. TODOs: Responsive design. Button design & on-click content modals.]
             </p>
           </div>
         </main>
