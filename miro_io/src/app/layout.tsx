@@ -1,15 +1,20 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Cormorant_Garamond, Cormorant_Infant } from "next/font/google";
 import "./globals.css";
+import AppTransitionShell from "../components/AppTransitionShell";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const scrollText = Cormorant_Garamond({
+  variable: "--font-scroll-text",
   subsets: ["latin"],
+  display: "swap",
+  weight: ["400", "500", "600", "700"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const scrollHeading = Cormorant_Infant({
+  variable: "--font-scroll-heading",
   subsets: ["latin"],
+  display: "swap",
+  weight: ["500", "600", "700"],
 });
 
 export const metadata: Metadata = {
@@ -24,7 +29,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="h-full w-full m-0 p-0">
-      <body className="h-full w-full m-0 p-0">{children}</body>
+      <body className={`${scrollText.variable} ${scrollHeading.variable} h-full w-full m-0 p-0 bg-[#FBDDB5]`}>
+        <AppTransitionShell>{children}</AppTransitionShell>
+      </body>
     </html>
   );
 }

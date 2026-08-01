@@ -1,3 +1,156 @@
 @import "tailwindcss";
 
+body {
+	font-family: var(--font-scroll-text), serif;
+	font-weight: 500;
+	color: rgb(50 36 22 / 84%);
+	text-rendering: optimizeLegibility;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+	text-shadow: 0 0.25px 0 rgb(48 34 22 / 14%);
+	line-height: 1.7;
+}
+
+.modern-theme,
+.modern-theme * {
+	text-shadow: none;
+}
+
+.modern-theme {
+	font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+	font-weight: 400;
+	line-height: 1.5;
+	color: #e5e7eb;
+	background: #181e29;
+}
+
+.modern-theme h1,
+.modern-theme h2,
+.modern-theme h3,
+.modern-theme h4,
+.modern-theme h5,
+.modern-theme h6,
+.modern-theme .font-heading {
+	font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+	font-weight: 600;
+	letter-spacing: 0;
+	text-transform: none;
+	font-variant-caps: normal;
+	color: #f9fafb;
+}
+
+/* Keep modern section navigation snappy by disabling page view transitions there. */
+:root:has(.modern-theme) ::view-transition-group(page-transition),
+:root:has(.modern-theme) ::view-transition-old(page-transition),
+:root:has(.modern-theme) ::view-transition-new(page-transition) {
+	animation: none !important;
+}
+
+:root:has(.modern-theme) ::view-transition-old(page-transition),
+:root:has(.modern-theme) ::view-transition-new(page-transition) {
+	opacity: 1 !important;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+.font-heading {
+	font-family: var(--font-scroll-heading), serif;
+	letter-spacing: 0.015em;
+	font-weight: 600;
+	text-transform: none;
+	font-variant-caps: normal;
+	color: rgb(46 31 19 / 88%);
+	text-shadow: 0 0.2px 0 rgb(40 28 18 / 10%);
+}
+
+@keyframes route-fade-out {
+	0% {
+		opacity: 1;
+	}
+	100% {
+		opacity: 0;
+	}
+}
+
+@keyframes route-fade-in {
+	0% {
+		opacity: 0;
+	}
+	100% {
+		opacity: 1;
+	}
+
+}
+
+::view-transition-old(page-transition) {
+	animation: route-fade-out 700ms ease forwards;
+}
+
+::view-transition-new(page-transition) {
+	opacity: 0;
+	animation: route-fade-in 700ms ease forwards;
+	animation-delay: 700ms;
+}
+
+/* ChessGame.tsx scoped styles: edit this block for chess component-only styling. */
+
+.chess-game {
+	width: 100%;
+	max-width: 420px;
+	margin: 1.5rem auto 0;
+	color: rgb(22 22 22 / 90%);
+}
+    
+#gameboard {
+    width: 224px;
+    height: 224px;
+    display: flex;
+    flex-wrap: wrap;
+}
+
+@media (min-width: 640px) {
+    #gameboard {
+        width: 400px;
+        height: 400px;
+    }
+}
+
+.square {
+    width: 28px;
+    height: 28px;
+    border: 1px rgba(0, 0, 0, 0.2) solid;
+}
+
+@media (min-width: 640px) {
+    .square {
+        width: 50px;
+        height: 50px;
+    }
+}
+
+/* .square svg {
+    width: 100%;
+    height: 100%;
+} */
+
+.light {
+    background-color: transparent;
+}
+
+.dark {
+    background-color: rgba(0, 0, 0, 0.4);
+}
+
+.white {
+    fill: rgb(255, 255, 255);
+}
+
+.black {
+    fill: rgb(0, 0, 0);
+}
+
 

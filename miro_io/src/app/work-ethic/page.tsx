@@ -25,7 +25,6 @@ export default function Work_Ethic() {
         <Link
         className="absolute top-[6%] right-[10%] p-1 bg-transparent rounded-lg text-black hover:bg-black/20 transition-colors"
         href="/"
-        prefetch={true}
         aria-label="Return Home"
         >
         ^^^ Stop Investigating Lumber Pile ^^^

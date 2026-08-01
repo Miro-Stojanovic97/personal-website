@@ -31,10 +31,8 @@ export default function Welcome() {
         </Link>
 
         <div className="absolute top-[20%] left-[10%] w-[80%] h-[80%] overflow-y-auto p-10">
-          <h1>
-            Welcome to my website! My name is Miro Stojanovic, and
-            I'm a software engineer currently based in the Milwaukee area.
-            I love to build things, because the best way to learn is by doing.
+          <h1>Welcome to my website! My name is Miro.<br/>
+            I'm a software engineer based in Milwaukee, Wisconsin.
           </h1><br/>
 
           <h1>
@@ -45,22 +43,18 @@ export default function Welcome() {
             If you'd like to contact me directly from here, keep exploring the Island for ways to reach me:)
           </h1><br/>
 
-          <h1>If you'd prefer a modern website layout with a nav bar,
-            instead of this island adventure:</h1>
-          <Link
-          className="border"
-          href="/nav"
-          prefetch={true}>
-            Click Here
-          </Link><br/>
-
-          <Image
-            src="/me-fun.jpg"
-            alt="Picture of Miro Stojanovic"
-            width={200}
-            height={200}
-            className="rounded-full border-2 border-black shadow-lg mx-auto"
-          />
+          <h1>If you'd prefer a modern layout instead of this island adventure,
+            click my casual photo below:</h1>
+            
+          <Link href="/nav">
+            <Image
+              src="/me-fun.jpg"
+              alt="Picture of Miro Stojanovic"
+              width={200}
+              height={200}
+              className="border-2 border-black rounded-2xl border-2 border-black/70 bg-[#f7ead3] p-0 shadow-md transition-all hover:-translate-y-0.5 hover:bg-[#fff7eb]"
+            />
+          </Link>
       </div>
     </div>
     </div>

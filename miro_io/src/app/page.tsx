@@ -21,7 +21,7 @@ export default function Home() {
 
   return (
     <main className="relative h-dvh w-screen overflow-hidden bg-[#facc9e] [--art-inset-x:0.85%] [--art-inset-y:1.3%] [--art-scale:1.09] sm:[--art-inset-y:2.15%] sm:[--art-scale:1.04]">
-      <h1 className="absolute left-4 top-4 z-20 rounded bg-white/70 px-3 py-1 text-sm font-semibold text-black backdrop-blur-sm sm:text-base">
+      <h1 className="absolute right-4 top-4 z-20 rounded border border-[#7fbbe8] bg-gradient-to-b from-[#c5e5ff]/95 to-[#4dabf7]/95 px-3 py-1 text-sm font-semibold text-[#08325c] backdrop-blur-sm sm:text-base">
         Things to Explore: {exploredThingsCount} / 8
       </h1>
       <div
@@ -44,7 +44,6 @@ export default function Home() {
         <Link
           className="absolute left-[41%] top-[6%] w-[6%] aspect-square rounded-full bg-transparent transition-colors hover:bg-black/10"
           href="/basketball"
-          prefetch={true}
           aria-label="Open Basketball page-Basketball"
           onClick={incrementExploredThingsCount}
         />
@@ -52,7 +51,6 @@ export default function Home() {
         <Link
           className="absolute left-[44.2%] top-[29.5%] w-[3%] aspect-square rounded-full bg-transparent transition-colors hover:bg-black/10"
           href="/throws"
-          prefetch={true}
           aria-label="Open Throws page-Throws"
           onClick={incrementExploredThingsCount}
         />
@@ -60,7 +58,6 @@ export default function Home() {
         <Link
           className="absolute left-[48.2%] top-[23%] w-[3%] aspect-square rounded-full bg-transparent transition-colors hover:bg-black/10"
           href="/chess"
-          prefetch={true}
           aria-label="Open Chess page-Chess"
           onClick={incrementExploredThingsCount}
         />
@@ -68,7 +65,6 @@ export default function Home() {
         <Link
           className="absolute left-[54.2%] top-[22.5%] w-[3%] aspect-square rounded-full bg-transparent transition-colors hover:bg-black/10"
           href="/job-experience"
-          prefetch={true}
           aria-label="Open Job Experience page-Job Experience"
           onClick={incrementExploredThingsCount}
         />
@@ -76,7 +72,6 @@ export default function Home() {
         <Link
           className="absolute left-[58.9%] top-[25%] w-[2.5%] aspect-square rounded-full bg-transparent transition-colors hover:bg-black/20"
           href="/work-ethic"
-          prefetch={true}
           aria-label="Open Work Ethic page-Work Ethic"
           onClick={incrementExploredThingsCount}
         />
@@ -84,21 +79,18 @@ export default function Home() {
         <Link
           className="absolute left-[49.3%] top-[59%] w-[3%] aspect-square rounded-full bg-transparent transition-colors hover:bg-black/20"
           href="/welcome"
-          prefetch={true}
           aria-label="Open Welcome page"
           onClick={incrementExploredThingsCount}
         />
         <Link
           className="absolute left-[45.5%] top-[63%] w-[3.5%] aspect-square rounded-full bg-transparent transition-colors hover:bg-black/10"
           href="/visit"
-          prefetch={true}
           aria-label="Open Contact page"
           onClick={incrementExploredThingsCount}
         />
         <Link
           className="absolute left-[53.3%] top-[64%] w-[2.5%] aspect-square rounded-full bg-transparent transition-colors hover:bg-black/10"
           href="/email"
-          prefetch={true}
           aria-label="Open Contact page"
           onClick={incrementExploredThingsCount}
         />

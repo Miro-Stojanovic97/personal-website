@@ -26,7 +26,6 @@ export default function Email() {
         className="absolute top-[6%] right-[10%] p-1 bg-transparent rounded-lg text-black hover:bg-black/20 transition-colors"
         href="/"
         aria-label="Return Home"
-        prefetch={true}
         >
         ^^^ Stop Investigating Fire ^^^
         </Link>
