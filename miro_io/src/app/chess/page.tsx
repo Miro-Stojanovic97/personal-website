@@ -31,28 +31,23 @@ export default function Chess() {
         ^^^ Stop Investigating Chess Board ^^^
         </Link>
 
-        <div className="absolute top-[12%] left-[10%] w-[80%] h-[80%] overflow-y-auto p-10 " style={{ fontSize: 'clamp(0.1rem, 2vw, 0.9rem)' }}>
-          <h1>I am an avid gamer, on the board or on the screen. Growing up I was a huge fan of chess,
-            and even started a chess club at my high school. Feel free to navigate to my Chess.com
-            profile below.</h1>
+        <div className="absolute top-[11%] left-[10%] w-[80%] h-[80%] overflow-y-auto p-10 " style={{ fontSize: 'clamp(0.1rem, 2vw, 0.9rem)' }}>
+          <h1>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;I'm a gamer, on board and on screen.
+            Growing up, I was a big chess fan, even starting a chess club at my high school.
+            Feel free to practice here, and challenge me at my Chess.com profile below:).
+            My other favorite board games are Risk, Ticket to Ride, and Catan.
+            In terms of video games, some favorites include Red Dead Redemption 2, 
+            Cyberpunk, NBA2K, CS:GO, and I'm currently enjoying Baldur's Gate 3.</h1>
             <Link href="https://www.chess.com/member/miro12" target="_blank" rel="noopener noreferrer">
               <Image
                 src="/chessprofile.png"
                 alt="Chess.com profile"
                 width={140}
                 height={60}
-                className="transition-all hover:-translate-y-1 mx-auto"
+                className="my-2 transition-all hover:-translate-y-1 mx-auto"
               />
             </Link>
-            <h1>
-            My favorite other board games are Risk, Ticket to Ride, Catan, Codenames, and Sorry.
-            In recent years, I have finished Red Dead Redemption 2, GTA5 (soon to be GTA6!),
-            Cyberpunk 2077, and am currently enjoying Baldurs Gate 3. I also enjoy NBA 2K,
-            which you may have already discovered by exploring the camp.
-          </h1>
-          
-        <Chess_Game />
-
+            <Chess_Game />
         </div>
       </div>
     </div>

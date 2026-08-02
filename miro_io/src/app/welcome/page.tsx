@@ -52,7 +52,7 @@ export default function Welcome() {
               alt="Picture of Miro Stojanovic"
               width={200}
               height={200}
-              className="border-2 border-black rounded-2xl border-2 border-black/70 bg-[#f7ead3] p-0 shadow-md transition-all hover:-translate-y-0.5 hover:bg-[#fff7eb]"
+              className="mx-auto border-2 border-black rounded-2xl border-2 border-black/70 bg-[#f7ead3] p-0 shadow-md transition-all hover:-translate-y-0.5 hover:bg-[#fff7eb]"
             />
           </Link>
       </div>

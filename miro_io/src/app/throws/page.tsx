@@ -42,7 +42,7 @@ export default function Throws() {
             alt="Photo of me coaching throws"
             width={300}
             height={200}
-            className="mx-auto mt-[clamp(0.75rem,2vh,1.5rem)] h-auto rounded-full border-2 border-black"
+            className="mx-auto mt-[clamp(0.75rem,2vh,1.5rem)] h-auto rounded-lg border-2 border-black"
             style={{ width: "clamp(120px, min(50vw, 30vh), 300px)", height: "auto" }}
           />
 
