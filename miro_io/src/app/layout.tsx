@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Cormorant_Garamond, Cormorant_Infant } from "next/font/google";
 import "./globals.css";
 import AppTransitionShell from "../components/AppTransitionShell";
+import { ChessProvider } from "../providers/ChessProvider";
 
 const scrollText = Cormorant_Garamond({
   variable: "--font-scroll-text",
@@ -30,7 +31,9 @@ export default function RootLayout({
   return (
     <html lang="en" className="h-full w-full m-0 p-0">
       <body className={`${scrollText.variable} ${scrollHeading.variable} h-full w-full m-0 p-0 bg-[#FBDDB5]`}>
-        <AppTransitionShell>{children}</AppTransitionShell>
+        <ChessProvider>
+          <AppTransitionShell>{children}</AppTransitionShell>
+        </ChessProvider>
       </body>
     </html>
   );

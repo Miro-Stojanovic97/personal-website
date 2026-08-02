@@ -45,9 +45,9 @@ export default function Chess() {
               />
             </Link>
             <h1>
-            My favorite other board games are Risk, Ticket to Ride, Catan, Codenames, and Sorry.</h1><br/><h1>
-            In recent years, I have finished Red Dead Redemption 2, GTA5 (eagerly awaiting GTA6!),
-            Cyberpunk 2077, and am currently playing Baldurs Gate 3. I'm also an avid NBA 2K player,
+            My favorite other board games are Risk, Ticket to Ride, Catan, Codenames, and Sorry.
+            In recent years, I have finished Red Dead Redemption 2, GTA5 (soon to be GTA6!),
+            Cyberpunk 2077, and am currently enjoying Baldurs Gate 3. I also enjoy NBA 2K,
             which you may have already discovered by exploring the camp.
           </h1>
           

@@ -20,7 +20,7 @@ export default function Home() {
   };
 
   return (
-    <main className="relative h-dvh w-screen overflow-hidden bg-[#facc9e] [--art-inset-x:0.85%] [--art-inset-y:1.3%] [--art-scale:1.09] sm:[--art-inset-y:2.15%] sm:[--art-scale:1.04]">
+    <main className="relative h-dvh w-screen overflow-hidden bg-[#facc9e] [--art-inset-x:0.85%] [--art-inset-y:1.3%] [--art-scale:1.09] sm:[--art-inset-y:0.5%] sm:[--art-scale:1.04]">
       <h1 className="absolute right-4 top-4 z-20 rounded border border-[#7fbbe8] bg-gradient-to-b from-[#c5e5ff]/95 to-[#4dabf7]/95 px-3 py-1 text-sm font-semibold text-[#08325c] backdrop-blur-sm sm:text-base">
         Things to Explore: {exploredThingsCount} / 8
       </h1>
