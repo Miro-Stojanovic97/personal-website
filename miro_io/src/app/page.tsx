@@ -5,24 +5,27 @@ import Image from "next/image";
 import Link from "next/link";
 import Wave from 'react-wavify';
 
-let exploredThingsCountState = 0;
+let discoveryCountInit: number = 0;
+const discoveryList: string[] = [];
 
 export default function Home() {
-  const [exploredThingsCount, setExploredThingsCount] = useState(exploredThingsCountState);
+  const [discoveryCount, setDiscoveryCount] = useState(discoveryCountInit);
   const imageAspect = 1954.58 / 1037.96;
 
-  const incrementExploredThingsCount = () => {
-    setExploredThingsCount((previousCount) => {
-      const nextCount = previousCount + 1;
-      exploredThingsCountState = nextCount;
-      return nextCount;
-    });
+  function incrementDiscoveryCount(discovery: string) {
+    if (!discoveryList.includes(discovery)) {
+      discoveryList.push(discovery);
+      const currentValue = discoveryCount;
+      const nextValue = currentValue + 1;
+      setDiscoveryCount(nextValue);
+      discoveryCountInit = nextValue;
+    }
   };
 
   return (
     <main className="relative h-dvh w-screen overflow-hidden bg-[#facc9e] [--art-inset-x:0.85%] [--art-inset-y:1.3%] [--art-scale:1.09] sm:[--art-inset-y:0.5%] sm:[--art-scale:1.04]">
       <h1 className="absolute right-4 top-4 z-20 rounded border border-[#7fbbe8] bg-gradient-to-b from-[#c5e5ff]/95 to-[#4dabf7]/95 px-3 py-1 text-sm font-semibold text-[#08325c] backdrop-blur-sm sm:text-base">
-        Things to Explore: {exploredThingsCount} / 8
+        Things to Explore: {discoveryCount} / 8
       </h1>
       <div
         className="absolute left-1/2 top-1/2 h-full w-full"
@@ -42,57 +45,65 @@ export default function Home() {
         />
 
         <Link
+          id="basketball"
           className="absolute left-[41%] top-[6%] w-[6%] aspect-square rounded-full bg-transparent transition-colors hover:bg-black/10"
           href="/basketball"
           aria-label="Open Basketball page-Basketball"
-          onClick={incrementExploredThingsCount}
+          onClick={() => incrementDiscoveryCount('basketball')}
         />
 
         <Link
+          id="throws"
           className="absolute left-[44.2%] top-[29.5%] w-[3%] aspect-square rounded-full bg-transparent transition-colors hover:bg-black/10"
           href="/throws"
           aria-label="Open Throws page-Throws"
-          onClick={incrementExploredThingsCount}
+          onClick={() => incrementDiscoveryCount('throws')}
         />
 
         <Link
+          id="chess"
           className="absolute left-[48.2%] top-[23%] w-[3%] aspect-square rounded-full bg-transparent transition-colors hover:bg-black/10"
           href="/chess"
           aria-label="Open Chess page-Chess"
-          onClick={incrementExploredThingsCount}
+          onClick={() => incrementDiscoveryCount('chess')}
         />
 
         <Link
+          id="work-tent"
           className="absolute left-[54.2%] top-[22.5%] w-[3%] aspect-square rounded-full bg-transparent transition-colors hover:bg-black/10"
           href="/job-experience"
           aria-label="Open Job Experience page-Job Experience"
-          onClick={incrementExploredThingsCount}
+          onClick={() => incrementDiscoveryCount('work-tent')}
         />
 
         <Link
+          id="wood"
           className="absolute left-[58.9%] top-[25%] w-[2.5%] aspect-square rounded-full bg-transparent transition-colors hover:bg-black/20"
           href="/work-ethic"
           aria-label="Open Work Ethic page-Work Ethic"
-          onClick={incrementExploredThingsCount}
+          onClick={() => incrementDiscoveryCount('wood')}
         />
 
         <Link
+          id="tent"
           className="absolute left-[49.3%] top-[59%] w-[3%] aspect-square rounded-full bg-transparent transition-colors hover:bg-black/20"
           href="/welcome"
           aria-label="Open Welcome page"
-          onClick={incrementExploredThingsCount}
+          onClick={() => incrementDiscoveryCount('tent')}
         />
         <Link
+          id="kayak"
           className="absolute left-[45.5%] top-[63%] w-[3.5%] aspect-square rounded-full bg-transparent transition-colors hover:bg-black/10"
           href="/visit"
           aria-label="Open Contact page"
-          onClick={incrementExploredThingsCount}
+          onClick={() => incrementDiscoveryCount('kayak')}
         />
         <Link
+          id="fire"
           className="absolute left-[53.3%] top-[64%] w-[2.5%] aspect-square rounded-full bg-transparent transition-colors hover:bg-black/10"
           href="/email"
           aria-label="Open Contact page"
-          onClick={incrementExploredThingsCount}
+          onClick={() => incrementDiscoveryCount('fire')}
         />
 
         <div className="pointer-events-none absolute inset-x-0 bottom-[14%]">

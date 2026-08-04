@@ -2,7 +2,9 @@
 import Image from "next/image";
 import Link from "next/link";
 
-export default function Scroll_Page({ entityName, body }: { entityName: string, body: React.ReactNode }) {
+export default function Scroll_Page({ entityName, body, bodyClassName }: { entityName: string, body: React.ReactNode, bodyClassName?: string }) {
+  const contentClassName = bodyClassName || "absolute top-[12%] left-[10%] w-[80%] h-[80%] overflow-y-auto p-10";
+
   return (
     <div className="relative bg-[#FBDDB5] h-screen w-screen overflow-hidden">
       <div
@@ -31,7 +33,7 @@ export default function Scroll_Page({ entityName, body }: { entityName: string, 
         ^^^ Stop Investigating {entityName} ^^^
         </Link>
 
-        <div className="absolute top-[12%] left-[10%] w-[80%] h-[80%] overflow-y-auto p-10" style={{ fontSize: 'clamp(0.1rem, 2vw, 0.9rem)' }}>
+        <div className={contentClassName} style={{ fontSize: 'clamp(0.1rem, 2vw, 0.9rem)' }}>
             { body }
       </div>
     </div>
