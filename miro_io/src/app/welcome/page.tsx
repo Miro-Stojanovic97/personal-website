@@ -7,7 +7,7 @@ export default function Welcome() {
   const entityName = "Shoreline";
   const body = (
     <>
-      <h1>Welcome to my website! My name is Miro.<br/>
+      <h1>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Welcome to my website! My name is Miro.<br/>
         I&apos;m a software engineer based in Milwaukee, Wisconsin.
       </h1><br/>
 
@@ -34,5 +34,5 @@ export default function Welcome() {
     </>
   );
 
-  return <Scroll_Page entityName={entityName} body={body} bodyClassName="absolute top-[20%] left-[10%] w-[80%] h-[80%] overflow-y-auto p-10" />;
+  return <Scroll_Page entityName={entityName} body={body} bodyClassName="absolute top-[12%] left-[10%] w-[80%] h-[80%] overflow-y-auto p-10" />;
 }

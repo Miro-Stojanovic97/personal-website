@@ -6,7 +6,7 @@ export default function Throws() {
   const entityName = "Throwing Circle";
   const body = (
     <div style={{ fontSize: "clamp(0.8rem, min(2.8vw, 2vh), 1.1rem)" }}>
-      <h1>In my free time during the Spring, I coach track & field throwing at a local high school.
+      <h1>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;In my free time during the Spring, I coach track & field throwing at a local high school.
         So far, 6 of my athletes have qualified for the state meet, and 1 has become a state medalist,
         pictured below at the State Championships. Most importantly to me, 3 of my athletes have gone
         on to compete athletically in college! :)

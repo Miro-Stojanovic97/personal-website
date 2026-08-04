@@ -27,5 +27,5 @@ export default function Chess() {
     </>
   );
 
-  return <Scroll_Page entityName={entityName} body={body} bodyClassName="absolute top-[11%] left-[10%] w-[80%] h-[80%] overflow-y-auto p-10" />;
+  return <Scroll_Page entityName={entityName} body={body} bodyClassName="absolute top-[12%] left-[10%] w-[80%] h-[80%] overflow-y-auto p-10" />;
 }

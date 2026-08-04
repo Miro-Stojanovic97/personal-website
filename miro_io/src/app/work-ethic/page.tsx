@@ -6,7 +6,7 @@ export default function Work_Ethic() {
   const body = (
     <>
       <h1>
-        Growing up, my grandfather used to always talk about his experience as a lumber jack
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Growing up, my grandfather used to always talk about his experience as a lumber jack
         in his home village in Europe. It was hard work, and he took great pride in that fact.
         That is something I think rubbed off on me. From an early age, I have always had a
         full plate of activities, and tried to be a jack of all trades.
@@ -33,5 +33,5 @@ export default function Work_Ethic() {
     </>
   );
 
-  return <Scroll_Page entityName={entityName} body={body} bodyClassName="absolute top-[20%] left-[10%] w-[80%] h-[80%] overflow-y-auto p-10" />;
+  return <Scroll_Page entityName={entityName} body={body} bodyClassName="absolute top-[12%] left-[10%] w-[80%] h-[80%] overflow-y-auto p-10" />;
 }

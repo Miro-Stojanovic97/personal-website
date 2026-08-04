@@ -8,7 +8,7 @@ export default function Visit() {
   const body = (
     <>
       <h1>
-        Enter the Kayak and adventure to other parts of the Internet Sea,
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Enter the Kayak and adventure to other parts of the Internet Sea,
         like the Islands of LinkedIn and GitHub (by clicking on the icon below)
       </h1><br/>
 
