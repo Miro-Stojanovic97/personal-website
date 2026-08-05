@@ -1,10 +1,24 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 export default function NavLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const pathname = usePathname();
+
+  const sectionLinkClassName = (href: string) => {
+    const isActive = pathname === href;
+    return `rounded-md px-3 py-2 text-sm border transition-colors ${
+      isActive
+        ? "bg-[#181e29] text-white font-bold"
+        : "border-transparent text-gray-700 hover:bg-gray-100"
+    }`;
+  };
+
   return (
     <div className="modern-theme min-h-screen">
       <header className="border-b border-gray-200 bg-white">
@@ -16,21 +30,21 @@ export default function NavLayout({
           </Link>
           <Link
             href="/nav/about"
-            className="rounded-md px-3 py-2 text-sm text-gray-700 hover:bg-gray-100"
+            className={sectionLinkClassName("/nav/about")}
             prefetch={true}
           >
             About Me
           </Link>
           <Link
             href="/nav/experience"
-            className="rounded-md px-3 py-2 text-sm text-gray-700 hover:bg-gray-100"
+            className={sectionLinkClassName("/nav/experience")}
             prefetch={true}
           >
             Experience
           </Link>
           <Link
             href="/nav/contact"
-            className="rounded-md px-3 py-2 text-sm text-gray-700 hover:bg-gray-100"
+            className={sectionLinkClassName("/nav/contact")}
             prefetch={true}
           >
             Contact Me

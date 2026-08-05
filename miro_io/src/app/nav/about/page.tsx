@@ -1,7 +1,6 @@
 export default function ModernAboutPage() {
   return (
     <section className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
-      <h1 className="mb-3 text-3xl">About Me</h1>
       <p className="mb-3 text-gray-700">
         I am a full-stack software engineer focused on building practical, clean web products.
       </p>

@@ -2,7 +2,7 @@
 import Image from "next/image";
 import Link from "next/link";
 
-export default function Scroll_Page({ entityName, body, bodyClassName }: { entityName: string, body: React.ReactNode, bodyClassName?: string }) {
+export default function Scroll_Page({ entityName, body, bodyClassName, showStopLink = true }: { entityName: string, body: React.ReactNode, bodyClassName?: string, showStopLink?: boolean }) {
   const contentClassName = bodyClassName || "absolute top-[12%] left-[10%] w-[80%] h-[80%] overflow-y-auto p-10";
 
   return (
@@ -24,14 +24,16 @@ export default function Scroll_Page({ entityName, body, bodyClassName }: { entit
           className=""
         />
 
-        <Link
-        className="absolute top-[6%] right-[10%] p-1 bg-transparent rounded-lg text-black hover:bg-black/20 transition-colors"
-        href="/"
-        prefetch={true}
-        aria-label="Return Home"
-        >
-        ^^^ Stop Investigating {entityName} ^^^
-        </Link>
+        {showStopLink && (
+          <Link
+          className="absolute top-[6%] right-[10%] px-4 border border-black/10 rounded-lg text-black hover:bg-black/20 transition-colors"
+          href="/"
+          prefetch={true}
+          aria-label="Return Home"
+          >
+          Stop Investigating {entityName}
+          </Link>
+        )}
 
         <div className={contentClassName} style={{ fontSize: 'clamp(0.1rem, 2vw, 0.9rem)' }}>
             { body }

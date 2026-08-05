@@ -8,19 +8,16 @@ export default function Welcome() {
   const body = (
     <>
       <h1>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Welcome to my website! My name is Miro.<br/>
-        I&apos;m a software engineer based in Milwaukee, Wisconsin.
+        I&apos;m a software engineer based in Milwaukee, Wisconsin. If you&apos;d like to contact me
+        directly from here, you best find a way off this Island.
       </h1><br/>
 
       <h1>
-        You are visitor #: [insert visitor count here]
+        You are visitor #: [Future TODO In Progress]
       </h1><br/>
 
-      <h1>
-        If you&apos;d like to contact me directly from here, keep exploring the Island for ways to reach me:)
-      </h1><br/>
-
-      <h1>If you&apos;d prefer a modern layout instead of this island adventure,
-        click my casual photo below:</h1>
+      <h1>If you&apos;d like a less casual layout than this island adventure,
+        click my totally not casual photo below:</h1>
 
       <Link href="/nav">
         <Image
@@ -28,7 +25,7 @@ export default function Welcome() {
           alt="Picture of Miro Stojanovic"
           width={200}
           height={200}
-          className="mx-auto border-2 border-black rounded-2xl border-2 border-black/70 bg-[#f7ead3] p-0 shadow-md transition-all hover:-translate-y-0.5 hover:bg-[#fff7eb]"
+          className="mx-auto border-2 border-black rounded-xl mt-4 transition-all hover:-translate-y-0.5 hover:bg-[#fff7eb]"
         />
       </Link>
     </>

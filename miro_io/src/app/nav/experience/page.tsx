@@ -1,7 +1,6 @@
 export default function ModernExperiencePage() {
   return (
     <section className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
-      <h1 className="mb-3 text-3xl">Experience</h1>
       <p className="mb-3 text-gray-700">
         I have professional experience delivering full-stack features from design through deployment.
       </p>
