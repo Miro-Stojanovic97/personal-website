@@ -1,402 +1,518 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import type { PointerEvent as ReactPointerEvent } from "react";
+import * as THREE from "three";
+import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 
-// Shared sizing and physics values for the bounce area.
-const DEFAULT_BOX_WIDTH = 420;
-const DEFAULT_BOX_HEIGHT = 260;
-// The floor sits at the bottom edge of the box in this version.
-const FLOOR_HEIGHT = 0;
-// Ball size controls rendering and collision boundaries.
-const BALL_SIZE = 216;
-// A real basketball is about 24cm in diameter.
-const BASKETBALL_DIAMETER_METERS = 0.24;
-// Convert visual ball size into a rough pixels-per-meter scale.
-const PIXELS_PER_METER = BALL_SIZE / BASKETBALL_DIAMETER_METERS;
-// Earth gravity converted from m/s^2 into px/s^2.
-const GRAVITY = 9.8 * PIXELS_PER_METER;
-// Basketballs keep a lively first bounce on hardwood.
-const FLOOR_BOUNCE = 0.86;
-// Walls and ceiling should feel softer than the floor.
-const WALL_BOUNCE = 0.68;
-// Sideways rolling should die out fairly quickly after contact.
-const FLOOR_ROLL_DAMPING = 0.86;
-// Pointer release is only slightly boosted so throws do not feel overpowered.
+type Vec2 = {
+  // Horizontal position/velocity component in world space.
+  x: number;
+  // Vertical position/velocity component in world space.
+  y: number;
+};
+
+type SceneBounds = {
+  // Left-most x where ball center can move.
+  left: number;
+  // Right-most x where ball center can move.
+  right: number;
+  // Floor y where the ball should bounce/settle.
+  floor: number;
+  // Upper y limit (kept infinite for open ceiling behavior).
+  ceiling: number;
+};
+
+// Visual diameter target for the imported basketball model in scene units.
+const TARGET_BALL_DIAMETER = 4;
+// Camera distance from origin; also used when deriving visible world bounds.
+const CAMERA_Z = 12;
+// Downward acceleration (world units / s^2).
+const GRAVITY = 70;
+// Extra spacing above the visual bottom edge so the model does not clip.
+const BOTTOM_CLEARANCE = 0.35;
+// Horizontal margin so the model does not clip against left/right edges.
+const SIDE_CLEARANCE = 0.25;
+// Energy retained after floor impacts.
+const FLOOR_BOUNCE = 0.90;
+// Energy retained after side-wall impacts.
+const WALL_BOUNCE = 0.75;
+// Horizontal speed damping applied on floor impact.
+const FLOOR_FRICTION = 0.94;
+// Per-frame damping for free motion in air.
+const AIR_DRAG = 0.996;
+// Threshold under which motion is considered effectively stopped.
+const REST_SPEED = 0.12;
+// Small vertical rebounds are snapped to zero to avoid jitter.
+const BOUNCE_STOP_SPEED = 0.18;
+// Scales release velocity estimated from pointer movement.
 const RELEASE_VELOCITY_SCALE = 1.08;
-// Small tolerances help the ball settle cleanly on the floor.
-const FLOOR_EPSILON = 0.5;
-const REST_SPEED = 18;
-// Kill small rebounds so the ball does not chatter on the floor forever.
-const FLOOR_BOUNCE_STOP_SPEED = 180;
-// Each floor impact should lose a bit more energy than the last.
-const FLOOR_BOUNCE_DECAY_PER_HIT = 0.04;
-// After a few bounces, low-energy impacts should settle immediately.
-const MAX_BOUNCES_BEFORE_FORCE_SETTLE = 6;
-const FORCE_SETTLE_VERTICAL_SPEED = 420;
-const INITIAL_POSITION = { x: 48, y: DEFAULT_BOX_HEIGHT - FLOOR_HEIGHT - BALL_SIZE };
+// Maps translational velocity into visual spin at release.
+const SPIN_SCALE = 0.35;
+// Spin damping applied each frame.
+const SPIN_DAMPING = 0.985;
+
+function clamp(value: number, min: number, max: number) {
+  // Utility clamp used for bounds-safe positions.
+  return Math.max(min, Math.min(max, value));
+}
+
+function worldPointFromPointer(
+  clientX: number,
+  clientY: number,
+  container: HTMLDivElement,
+  camera: THREE.PerspectiveCamera,
+) {
+  // Convert screen pointer coordinates into normalized device coordinates.
+  const rect = container.getBoundingClientRect();
+  const ndcX = ((clientX - rect.left) / rect.width) * 2 - 1;
+  const ndcY = -(((clientY - rect.top) / rect.height) * 2 - 1);
+
+  // Unproject into world space and intersect the z=0 interaction plane.
+  const point = new THREE.Vector3(ndcX, ndcY, 0.5).unproject(camera);
+  const direction = point.sub(camera.position).normalize();
+  const distance = -camera.position.z / direction.z;
+
+  return camera.position.clone().add(direction.multiplyScalar(distance));
+}
 
 export default function BasketballBounce() {
-  // Animation frame id so the loop can be cancelled cleanly.
-  const frameRef = useRef<number | null>(null);
-  // Tracks whether the ball is fully settled so the loop can stop.
-  const isSettledRef = useRef(false);
-  // Counts repeated floor impacts during the current throw.
-  const bounceCountRef = useRef(0);
-  // Tracks drag state synchronously outside React renders.
-  const isDraggingRef = useRef(false);
-  // Last frame timestamp used to compute delta time.
+  // DOM node where the WebGL canvas is mounted.
+  const sceneContainerRef = useRef<HTMLDivElement | null>(null);
+  // Renderer instance reference for resize/cleanup.
+  const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
+  // Camera reference for pointer-to-world conversion and resize updates.
+  const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
+  // Scene reference retained for completeness/debugging.
+  const sceneRef = useRef<THREE.Scene | null>(null);
+  // Parent group for the basketball model so position/spin can be controlled together.
+  const basketballGroupRef = useRef<THREE.Group | null>(null);
+  // Cached physical radius used for collision bounds.
+  const ballRadiusRef = useRef(TARGET_BALL_DIAMETER / 2);
+  // Dynamic world-space movement limits, derived from camera frustum and container size.
+  const boundsRef = useRef<SceneBounds>({
+    left: -3,
+    right: 3,
+    floor: -2,
+    ceiling: Number.POSITIVE_INFINITY,
+  });
   const lastTimeRef = useRef<number | null>(null);
-  // Velocity lives in a ref so the animation loop can update it without rerendering.
-  const velocityRef = useRef({ x: 0, y: 0 });
-  // Position lives in a ref so animation does not trigger rerenders.
-  const positionRef = useRef(INITIAL_POSITION);
-  // Drag offset keeps the pointer anchored to the same spot on the ball.
-  const dragOffsetRef = useRef({ x: 0, y: 0 });
-  // Recent pointer points are used to turn a release into throw velocity.
+  // Drag state is kept in refs to avoid high-frequency re-renders.
+  const isDraggingRef = useRef(false);
+  // Marks when the ball has fully settled so physics can pause.
+  const isSettledRef = useRef(false);
+  // Used to progressively reduce bounce height over repeated impacts.
+  const bounceCountRef = useRef(0);
+  // Linear velocity in world units/second.
+  const velocityRef = useRef<Vec2>({ x: 0, y: 0 });
+  // Angular velocity-like values used for visual spin.
+  const spinRef = useRef({ x: 0, y: 0, z: 0 });
+  // Current world-space center position of the ball.
+  const positionRef = useRef<Vec2>({ x: 0, y: 0 });
+  // Pointer-to-ball offset so drags feel anchored where user grabbed.
+  const dragOffsetRef = useRef<Vec2>({ x: 0, y: 0 });
+  // Sliding window of recent pointer samples for release velocity estimation.
   const pointerHistoryRef = useRef<{ x: number; y: number; time: number }[]>([]);
-  // This ref points at the element that defines the bounce area.
-  const boxRef = useRef<HTMLDivElement | null>(null);
-  // This ref points at the rendered ball element.
-  const ballRef = useRef<HTMLDivElement | null>(null);
+  // Ensures physics only runs after the model is loaded.
+  const modelLoadedRef = useRef(false);
+  // UI-only flag for loading text visibility.
+  const [isModelLoaded, setIsModelLoaded] = useState(false);
 
-  // Current measured size of the bounce area.
-  const [boxSize, setBoxSize] = useState({ width: DEFAULT_BOX_WIDTH, height: DEFAULT_BOX_HEIGHT });
-
-  // The largest allowed top position before the ball hits the floor.
-  const floorY = boxSize.height - FLOOR_HEIGHT - BALL_SIZE;
-  // This flag pauses physics while the user is holding the ball.
-  const [isDragging, setIsDragging] = useState(false);
-
-  // Apply the current ball position directly to the DOM element.
-  function renderBall(position: { x: number; y: number }, dragging: boolean) {
-    const ball = ballRef.current;
-    if (!ball) {
+  const syncBallToScene = () => {
+    // Push latest simulated position into the rendered group transform.
+    const group = basketballGroupRef.current;
+    if (!group) {
       return;
     }
 
-    ball.style.transform = `translate3d(${position.x}px, ${position.y}px, 0)`;
-    ball.style.cursor = dragging ? "grabbing" : "grab";
-  }
+    group.position.set(positionRef.current.x, positionRef.current.y, 0);
+  };
 
-  // Resize the bounce area when the container changes size.
-  useEffect(() => {
-    const box = boxRef.current;
-    if (!box) {
+  const updateBounds = useCallback((width: number, height: number) => {
+    const camera = cameraRef.current;
+    if (!camera) {
       return;
     }
 
-    // Measure the live element and fall back to defaults if needed.
-    const updateSize = () => {
-      const nextWidth = Math.round(box.clientWidth || DEFAULT_BOX_WIDTH);
-      const nextHeight = Math.round(box.clientHeight || DEFAULT_BOX_HEIGHT);
+    // Compute the visible world extents at z=0 from camera FOV and container aspect ratio.
+    const visibleHeight = 2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * CAMERA_Z;
+    const visibleWidth = visibleHeight * (width / height);
+    const radius = ballRadiusRef.current;
 
-      setBoxSize((current) => {
-        if (current.width === nextWidth && current.height === nextHeight) {
-          return current;
-        }
-
-        return {
-          width: nextWidth,
-          height: nextHeight,
-        };
-      });
+    // Bounds track where the ball center is allowed, with configurable visual clearances.
+    boundsRef.current = {
+      left: -visibleWidth / 2 + radius + SIDE_CLEARANCE,
+      right: visibleWidth / 2 - radius - SIDE_CLEARANCE,
+      floor: -visibleHeight / 2 + radius + BOTTOM_CLEARANCE,
+      ceiling: Number.POSITIVE_INFINITY,
     };
 
-    // Run once so physics has the correct starting bounds.
-    updateSize();
-
-    // Watch future size changes from layout or viewport updates.
-    const resizeObserver = new ResizeObserver(updateSize);
-    resizeObserver.observe(box);
-
-    return () => {
-      // Stop observing when the component unmounts.
-      resizeObserver.disconnect();
+    // Keep the existing ball position legal after any resize.
+    positionRef.current = {
+      x: clamp(positionRef.current.x, boundsRef.current.left, boundsRef.current.right),
+      y: clamp(positionRef.current.y, boundsRef.current.floor, boundsRef.current.ceiling),
     };
+    syncBallToScene();
   }, []);
 
-  // Clamp the ball after size changes and render its current position.
-  useEffect(() => {
-    const nextPosition = {
-      x: Math.max(0, Math.min(boxSize.width - BALL_SIZE, positionRef.current.x)),
-      y: Math.max(0, Math.min(floorY, positionRef.current.y)),
+  const resetThrowState = useCallback(() => {
+    // Reset all motion to a clean state before drag starts or when parking at rest.
+    velocityRef.current = { x: 0, y: 0 };
+    spinRef.current = { x: 0, y: 0, z: 0 };
+    bounceCountRef.current = 0;
+    isSettledRef.current = false;
+  }, []);
+
+  const placeBallAtRest = useCallback(() => {
+    // Put the ball on the floor at center and mark simulation as settled.
+    resetThrowState();
+    positionRef.current = {
+      x: 0,
+      y: boundsRef.current.floor,
     };
+    isSettledRef.current = true;
+    lastTimeRef.current = null;
+    syncBallToScene();
+  }, [resetThrowState]);
 
-    positionRef.current = nextPosition;
-    renderBall(nextPosition, isDraggingRef.current);
-  }, [boxSize.width, floorY]);
-
-  // Run the gravity and wall-bounce simulation when the ball is free.
-  useEffect(() => {
-    if (isDragging) {
-      // Stop the loop while the user is directly controlling the ball.
-      if (frameRef.current !== null) {
-        cancelAnimationFrame(frameRef.current);
-        frameRef.current = null;
-      }
-      // Reset timing so the first post-drag frame does not jump.
-      lastTimeRef.current = null;
+  const handlePointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
+    // Require fully initialized scene objects before allowing interaction.
+    const container = sceneContainerRef.current;
+    const camera = cameraRef.current;
+    const group = basketballGroupRef.current;
+    if (!container || !camera || !group) {
       return;
     }
 
-    // Restart physics after a new release.
-    isSettledRef.current = false;
+    const worldPoint = worldPointFromPointer(event.clientX, event.clientY, container, camera);
+    // Capture grab offset so the model follows the exact contact point.
+    dragOffsetRef.current = {
+      x: worldPoint.x - positionRef.current.x,
+      y: worldPoint.y - positionRef.current.y,
+    };
 
-    // One animation step advances the ball using elapsed time.
+    // Seed pointer history for release velocity and enter drag mode.
+    pointerHistoryRef.current = [{ x: worldPoint.x, y: worldPoint.y, time: performance.now() }];
+    resetThrowState();
+    isDraggingRef.current = true;
+    // Pointer capture keeps drag stable even if cursor leaves the element.
+    event.currentTarget.setPointerCapture(event.pointerId);
+  };
+
+  const handlePointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
+    // Ignore move events unless this component currently owns the drag.
+    if (!isDraggingRef.current) {
+      return;
+    }
+
+    const container = sceneContainerRef.current;
+    const camera = cameraRef.current;
+    if (!container || !camera) {
+      return;
+    }
+
+    const worldPoint = worldPointFromPointer(event.clientX, event.clientY, container, camera);
+    // Convert pointer motion into clamped world-space position.
+    const nextPosition = {
+      x: clamp(worldPoint.x - dragOffsetRef.current.x, boundsRef.current.left, boundsRef.current.right),
+      y: clamp(worldPoint.y - dragOffsetRef.current.y, boundsRef.current.floor, boundsRef.current.ceiling),
+    };
+
+    // Keep a short recent sample window for robust velocity estimation.
+    pointerHistoryRef.current = [
+      ...pointerHistoryRef.current,
+      { x: worldPoint.x, y: worldPoint.y, time: performance.now() },
+    ].slice(-6);
+
+    positionRef.current = nextPosition;
+    syncBallToScene();
+  };
+
+  const handlePointerUp = (event: ReactPointerEvent<HTMLDivElement>) => {
+    // Ignore release if we were not in an active drag.
+    if (!isDraggingRef.current) {
+      return;
+    }
+
+    // Derive release speed from oldest/newest samples in the short history window.
+    const history = pointerHistoryRef.current;
+    const firstPoint = history[0];
+    const lastPoint = history[history.length - 1];
+    const elapsed = Math.max((lastPoint?.time ?? 0) - (firstPoint?.time ?? 0), 16);
+
+    // Convert pointer delta/time into world units per second.
+    velocityRef.current = {
+      x: ((((lastPoint?.x ?? positionRef.current.x) - (firstPoint?.x ?? positionRef.current.x)) / elapsed) * 1000) * RELEASE_VELOCITY_SCALE,
+      y: ((((lastPoint?.y ?? positionRef.current.y) - (firstPoint?.y ?? positionRef.current.y)) / elapsed) * 1000) * RELEASE_VELOCITY_SCALE,
+    };
+
+    // Seed a spin impulse that visually matches the release direction.
+    spinRef.current = {
+      x: velocityRef.current.y * SPIN_SCALE,
+      y: velocityRef.current.x * SPIN_SCALE,
+      z: velocityRef.current.x * 0.25,
+    };
+
+    pointerHistoryRef.current = [];
+    isDraggingRef.current = false;
+
+    // Release pointer capture only if this element still owns it.
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+  };
+
+  useEffect(() => {
+    // Scene setup runs once; all animation/interaction mutates refs after that.
+    const container = sceneContainerRef.current;
+    if (!container) {
+      return;
+    }
+
+    // Create base Three.js primitives.
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 1000);
+    camera.position.set(0, 0, CAMERA_Z);
+    camera.lookAt(0, 0, 0);
+
+    // Transparent renderer to blend with page artwork.
+    const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setClearColor(0x000000, 0);
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    rendererRef.current = renderer;
+    cameraRef.current = camera;
+    sceneRef.current = scene;
+
+    // Lighting stack tuned for readable seams and warm scroll palette.
+    const ambientLight = new THREE.AmbientLight(0xffffff, 2.2);
+    scene.add(ambientLight);
+
+    const keyLight = new THREE.DirectionalLight(0xffffff, 2.1);
+    keyLight.position.set(5, 8, 10);
+    scene.add(keyLight);
+
+    const fillLight = new THREE.HemisphereLight(0xfff4dc, 0x3a1f11, 1.2);
+    scene.add(fillLight);
+
+    const courtGlow = new THREE.PointLight(0xffb47a, 1.2, 30);
+    courtGlow.position.set(0, -2, 8);
+    scene.add(courtGlow);
+
+    const basketballGroup = new THREE.Group();
+    basketballGroupRef.current = basketballGroup;
+    scene.add(basketballGroup);
+
+    const loader = new GLTFLoader();
+    // Cleanup guards for async load and RAF lifecycle.
+    let destroyed = false;
+    let animationFrameId = 0;
+
+    // Mount and configure canvas.
+    renderer.setSize(container.clientWidth, container.clientHeight);
+    container.appendChild(renderer.domElement);
+    renderer.domElement.style.touchAction = "none";
+    renderer.domElement.style.display = "block";
+
+    const resizeScene = () => {
+      // Resize may fire before refs are fully wired.
+      if (!sceneContainerRef.current || !cameraRef.current || !rendererRef.current) {
+        return;
+      }
+
+      // Keep camera projection and simulated bounds in lockstep with DOM size.
+      const nextWidth = Math.max(sceneContainerRef.current.clientWidth, 1);
+      const nextHeight = Math.max(sceneContainerRef.current.clientHeight, 1);
+
+      cameraRef.current.aspect = nextWidth / nextHeight;
+      cameraRef.current.updateProjectionMatrix();
+      rendererRef.current.setSize(nextWidth, nextHeight);
+      updateBounds(nextWidth, nextHeight);
+    };
+
+    const resizeObserver = new ResizeObserver(resizeScene);
+    resizeObserver.observe(container);
+    // Initialize bounds once before first interaction.
+    resizeScene();
+
+    loader.load(
+      "/basketball/scene.gltf",
+      (gltf) => {
+        if (destroyed) {
+          return;
+        }
+
+        // Normalize imported model to a predictable centered scale.
+        const basketball = gltf.scene;
+        const box = new THREE.Box3().setFromObject(basketball);
+        const size = box.getSize(new THREE.Vector3());
+        const center = box.getCenter(new THREE.Vector3());
+        const maxDimension = Math.max(size.x, size.y, size.z) || 1;
+        const scale = TARGET_BALL_DIAMETER / maxDimension;
+
+        // Center and orient seams for the intended starting look.
+        basketball.position.sub(center);
+        basketball.scale.setScalar(scale);
+        basketball.rotation.z = -Math.PI / 2;
+        basketball.rotation.y = -Math.PI / 6;
+        basketballGroup.add(basketball);
+        // Cache radius and enable physics/render state.
+        ballRadiusRef.current = TARGET_BALL_DIAMETER / 2;
+        modelLoadedRef.current = true;
+        setIsModelLoaded(true);
+        placeBallAtRest();
+      },
+      undefined,
+      (error) => {
+        // Keep load failures visible in console for asset debugging.
+        console.error("Failed to load basketball model", error);
+      },
+    );
+
     const step = (time: number) => {
-      if (isSettledRef.current) {
-        frameRef.current = null;
+      // Wait until camera and model group are ready before simulating.
+      const ballGroup = basketballGroupRef.current;
+      const cameraInstance = cameraRef.current;
+      if (!ballGroup || !cameraInstance) {
+        animationFrameId = window.requestAnimationFrame(step);
         return;
       }
 
       if (lastTimeRef.current === null) {
-        // Seed the timer on the first frame.
+        // Seed first frame timestamp.
         lastTimeRef.current = time;
       }
 
-      // Cap delta so tab switches do not create giant physics jumps.
+      // Clamp delta to avoid giant jumps after tab inactivity.
       const delta = Math.min((time - lastTimeRef.current) / 1000, 0.032);
       lastTimeRef.current = time;
 
-      const current = positionRef.current;
+      // Run physics only when model is loaded, not being dragged, and not fully settled.
+      if (!isDraggingRef.current && modelLoadedRef.current && !isSettledRef.current) {
+        // Gravity accelerates downward every frame.
+        velocityRef.current.y -= GRAVITY * delta;
 
-      // If the ball is already settled on the floor, skip extra work.
-      const isAlreadyResting = current.y >= floorY - FLOOR_EPSILON && Math.abs(velocityRef.current.y) < REST_SPEED && Math.abs(velocityRef.current.x) < REST_SPEED;
-      if (isAlreadyResting) {
-        const settledPosition = { x: Math.round(current.x), y: floorY };
-        velocityRef.current = { x: 0, y: 0 };
-        positionRef.current = settledPosition;
-        renderBall(settledPosition, false);
-        isSettledRef.current = true;
-      } else {
-        isSettledRef.current = false;
+        let nextX = positionRef.current.x + velocityRef.current.x * delta;
+        let nextY = positionRef.current.y + velocityRef.current.y * delta;
+        let nextVelocityX = velocityRef.current.x * AIR_DRAG;
+        let nextVelocityY = velocityRef.current.y * AIR_DRAG;
 
-        // Treat tiny vertical motion on the floor as a grounded rolling state.
-        const isGrounded = current.y >= floorY - FLOOR_EPSILON && Math.abs(velocityRef.current.y) < REST_SPEED;
+        // Pull current collision bounds snapshot.
+        const { left, right, floor, ceiling } = boundsRef.current;
 
-        // Move from the current position using the stored velocity.
-        let nextX = current.x + velocityRef.current.x * delta;
-        let nextY = isGrounded ? floorY : current.y + velocityRef.current.y * delta;
-        // Start from the current velocity before applying collisions.
-        let nextVelocityX = velocityRef.current.x;
-        // Gravity increases downward speed every frame unless the ball is grounded.
-        let nextVelocityY = isGrounded ? 0 : velocityRef.current.y + GRAVITY * delta;
-
-        // Let grounded horizontal motion decay smoothly without re-bouncing vertically.
-        if (isGrounded) {
-          nextVelocityX *= 0.94;
-          if (Math.abs(nextVelocityX) < REST_SPEED) {
-            nextVelocityX = 0;
-          }
+        // Left/right wall collisions reflect horizontal velocity with damping.
+        if (nextX <= left) {
+          nextX = left;
+          nextVelocityX = Math.abs(nextVelocityX) * WALL_BOUNCE;
+        } else if (nextX >= right) {
+          nextX = right;
+          nextVelocityX = -Math.abs(nextVelocityX) * WALL_BOUNCE;
         }
 
-        // Bounce off the left wall.
-        if (nextX <= 0) {
-          nextX = 0;
-          nextVelocityX *= -WALL_BOUNCE;
+        // Ceiling remains available even though it is configured as infinity.
+        if (nextY >= ceiling) {
+          nextY = ceiling;
+          nextVelocityY = -Math.abs(nextVelocityY) * WALL_BOUNCE;
         }
 
-        // Bounce off the right wall.
-        if (nextX >= boxSize.width - BALL_SIZE) {
-          nextX = boxSize.width - BALL_SIZE;
-          nextVelocityX *= -WALL_BOUNCE;
-        }
-
-        // Bounce off the ceiling.
-        if (nextY <= 0) {
-          nextY = 0;
-          nextVelocityY *= -WALL_BOUNCE;
-        }
-
-        // Bounce off the floor and apply a little horizontal damping.
-        if (!isGrounded && nextY >= floorY - FLOOR_EPSILON) {
+        // Floor collision adds bounce loss, friction, and spin impulse.
+        if (nextY <= floor) {
+          nextY = floor;
           bounceCountRef.current += 1;
-          nextY = floorY;
-          const floorBounceForThisHit = Math.max(0.45, FLOOR_BOUNCE - ((bounceCountRef.current - 1) * FLOOR_BOUNCE_DECAY_PER_HIT));
-          nextVelocityY *= -floorBounceForThisHit;
 
-          // Kill small rebounds so the ball settles like a real dribble ending.
-          if (Math.abs(nextVelocityY) < FLOOR_BOUNCE_STOP_SPEED) {
+          // Gradually reduce bounce strength across repeated impacts.
+          const floorBounce = bounceCountRef.current > 1
+            ? Math.max(0.45, FLOOR_BOUNCE - ((bounceCountRef.current - 1) * 0.04))
+            : FLOOR_BOUNCE;
+
+          nextVelocityY = Math.abs(nextVelocityY) * floorBounce;
+          nextVelocityX *= FLOOR_FRICTION;
+          spinRef.current.z += nextVelocityX * 0.025;
+
+          // Snap tiny rebounds to zero so the ball doesn't chatter forever.
+          if (Math.abs(nextVelocityY) < BOUNCE_STOP_SPEED) {
             nextVelocityY = 0;
-          }
-
-          // After a few bounces, low-energy impacts should settle immediately.
-          if (bounceCountRef.current >= MAX_BOUNCES_BEFORE_FORCE_SETTLE && Math.abs(nextVelocityY) < FORCE_SETTLE_VERTICAL_SPEED) {
-            nextVelocityY = 0;
-          }
-
-          // Reduce sideways speed on each floor hit so rolling dies out quickly.
-          nextVelocityX *= FLOOR_ROLL_DAMPING;
-          // Snap tiny sideways drift to zero.
-          if (Math.abs(nextVelocityX) < REST_SPEED) {
-            nextVelocityX = 0;
           }
         }
 
-        // If both speeds are tiny on the floor, fully settle the ball.
-        const isRestingOnFloor = nextY >= floorY - FLOOR_EPSILON && Math.abs(nextVelocityY) < REST_SPEED && Math.abs(nextVelocityX) < REST_SPEED;
-        if (isRestingOnFloor) {
-          nextY = floorY;
-          nextVelocityY = 0;
+        // Apply global damping after collisions.
+        nextVelocityX *= AIR_DRAG;
+        nextVelocityY *= AIR_DRAG;
+
+        // If motion is tiny on the floor, settle fully.
+        const nearFloor = nextY <= floor + 0.02;
+        const nearlyStill = Math.abs(nextVelocityX) < REST_SPEED && Math.abs(nextVelocityY) < REST_SPEED;
+        if (nearFloor && nearlyStill) {
+          nextX = clamp(nextX, left, right);
+          nextY = floor;
           nextVelocityX = 0;
+          nextVelocityY = 0;
+          spinRef.current = { x: 0, y: 0, z: 0 };
           bounceCountRef.current = 0;
           isSettledRef.current = true;
         }
 
-        const nextPosition = { x: Math.round(nextX), y: Math.round(nextY) };
-
-        // Save velocity and position for the next animation frame.
-        velocityRef.current = { x: nextVelocityX, y: nextVelocityY };
-        positionRef.current = nextPosition;
-        renderBall(nextPosition, false);
+        // Commit integrated position/velocity for next frame.
+        positionRef.current = {
+          x: clamp(nextX, left, right),
+          y: clamp(nextY, floor, ceiling),
+        };
+        velocityRef.current = {
+          x: nextVelocityX,
+          y: nextVelocityY,
+        };
+        syncBallToScene();
       }
 
-      // Queue the next frame only while motion is still active.
-      if (!isSettledRef.current) {
-        frameRef.current = requestAnimationFrame(step);
-      } else {
-        frameRef.current = null;
-      }
+      // Always update spin visual even when translation is paused.
+      ballGroup.rotation.x += spinRef.current.x * delta;
+      ballGroup.rotation.y += spinRef.current.y * delta;
+      ballGroup.rotation.z += spinRef.current.z * delta;
+      spinRef.current.x *= SPIN_DAMPING;
+      spinRef.current.y *= SPIN_DAMPING;
+      spinRef.current.z *= SPIN_DAMPING;
+
+      renderer.render(scene, cameraInstance);
+      animationFrameId = window.requestAnimationFrame(step);
     };
 
-    // Start the animation loop.
-    frameRef.current = requestAnimationFrame(step);
+    // Start render/physics loop.
+    animationFrameId = window.requestAnimationFrame(step);
 
     return () => {
-      // Cancel any pending frame during cleanup.
-      if (frameRef.current !== null) {
-        cancelAnimationFrame(frameRef.current);
-      }
-      frameRef.current = null;
-      // Clear timing state for the next loop start.
+      // Prevent async loader work from mutating unmounted state.
+      destroyed = true;
+      // Stop observing layout and animation work.
+      resizeObserver.disconnect();
+      window.cancelAnimationFrame(animationFrameId);
       lastTimeRef.current = null;
+      // Free GL resources and detach canvas.
+      renderer.dispose();
+      if (container.contains(renderer.domElement)) {
+        container.removeChild(renderer.domElement);
+      }
     };
-  }, [boxSize.width, floorY, isDragging]);
-
-  // Convert pointer coordinates into a ball position inside the box.
-  function clampPosition(clientX: number, clientY: number) {
-    const box = boxRef.current?.getBoundingClientRect();
-    if (!box) {
-      return null;
-    }
-
-    // Translate viewport pointer coordinates into local box coordinates.
-    const x = clientX - box.left - dragOffsetRef.current.x;
-    const y = clientY - box.top - dragOffsetRef.current.y;
-
-    // Keep the dragged ball fully inside the allowed area.
-    return {
-      x: Math.max(0, Math.min(boxSize.width - BALL_SIZE, x)),
-      y: Math.max(0, Math.min(floorY, y)),
-    };
-  }
-
-  // Move the ball with the pointer while it is being dragged.
-  function handlePointerMove(event: React.PointerEvent<HTMLDivElement>) {
-    if (!isDraggingRef.current) {
-      return;
-    }
-
-    // Convert the pointer into a safe ball position.
-    const nextPosition = clampPosition(event.clientX, event.clientY);
-    if (!nextPosition) {
-      return;
-    }
-
-    // Keep only a small recent history for a smoother throw speed.
-    const now = performance.now();
-    pointerHistoryRef.current = [...pointerHistoryRef.current, { x: event.clientX, y: event.clientY, time: now }].slice(-5);
-    // Follow the pointer immediately during drag.
-    positionRef.current = nextPosition;
-    renderBall(nextPosition, true);
-  }
-
-  // Use recent pointer motion to turn the release into a throw velocity.
-  function handlePointerUp(event: React.PointerEvent<HTMLDivElement>) {
-    if (!isDraggingRef.current) {
-      return;
-    }
-
-    // Compare the oldest and newest recent pointer samples.
-    const history = pointerHistoryRef.current;
-    const lastPoint = history[history.length - 1];
-    const firstPoint = history[0];
-    // Guard against tiny time windows when computing speed.
-    const elapsed = Math.max((lastPoint?.time ?? 0) - (firstPoint?.time ?? 0), 16);
-
-    // Convert pointer travel per millisecond into pixels per second.
-    velocityRef.current = {
-      x: ((((lastPoint?.x ?? event.clientX) - (firstPoint?.x ?? event.clientX)) / elapsed) * 1000) * RELEASE_VELOCITY_SCALE,
-      y: ((((lastPoint?.y ?? event.clientY) - (firstPoint?.y ?? event.clientY)) / elapsed) * 1000) * RELEASE_VELOCITY_SCALE,
-    };
-
-    // Clear drag-only data and hand control back to physics.
-    pointerHistoryRef.current = [];
-    isDraggingRef.current = false;
-    setIsDragging(false);
-    event.currentTarget.releasePointerCapture(event.pointerId);
-  }
-
-  // Start dragging and reset motion so the user can throw the ball again.
-  function handlePointerDown(event: React.PointerEvent<HTMLDivElement>) {
-    // Measure the ball so the grab point stays under the pointer.
-    const ball = event.currentTarget.getBoundingClientRect();
-    dragOffsetRef.current = {
-      x: event.clientX - ball.left,
-      y: event.clientY - ball.top,
-    };
-    // Start a short pointer history for release velocity.
-    pointerHistoryRef.current = [{ x: event.clientX, y: event.clientY, time: performance.now() }];
-    // Clear any old motion from the previous throw.
-    velocityRef.current = { x: 0, y: 0 };
-    bounceCountRef.current = 0;
-    isSettledRef.current = false;
-    isDraggingRef.current = true;
-    lastTimeRef.current = null;
-    // Switch from free physics to direct pointer control.
-    setIsDragging(true);
-    // Keep receiving pointer events even if the pointer moves fast.
-    event.currentTarget.setPointerCapture(event.pointerId);
-  }
+  }, [placeBallAtRest, updateBounds]);
 
   return (
+    // Full-size wrapper keeps scene aligned with parent slot.
     <div className="h-full w-full">
-      {/* Transparent container that defines the bounce area. */}
       <div
-        ref={boxRef}
-        className="relative h-full w-full overflow-hidden rounded-2xl border-2 border-transparent bg-transparent"
+        ref={sceneContainerRef}
+        // Interaction surface for pointer-driven dragging/throwing.
+        className="relative h-full w-full overflow-hidden bg-transparent"
+        style={{ touchAction: "none" }}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerCancel={handlePointerUp}
       >
-        {/* Draggable ball whose position is driven by drag input or the physics loop. */}
-        <div
-          ref={ballRef}
-          className="absolute z-10 overflow-hidden rounded-full"
-          style={{
-            width: BALL_SIZE,
-            height: BALL_SIZE,
-            left: 0,
-            top: 0,
-            transform: `translate3d(${INITIAL_POSITION.x}px, ${INITIAL_POSITION.y}px, 0)`,
-            willChange: "transform",
-            touchAction: "none",
-            cursor: isDragging ? "grabbing" : "grab",
-            backgroundColor: "#e97821",
-          }}
-          onPointerDown={handlePointerDown}
-          onPointerMove={handlePointerMove}
-          onPointerUp={handlePointerUp}
-          onPointerCancel={handlePointerUp}
-        >
-          <svg
-            className="absolute inset-0 h-full w-full"
-            viewBox="0 0 100 100"
-            aria-hidden="true"
-          >
-            <path d="M50 4 C43 24 43 76 50 96" fill="none" stroke="#6a2f0c" strokeWidth="3" strokeLinecap="round" />
-            <path d="M4 50 C24 43 76 43 96 50" fill="none" stroke="#6a2f0c" strokeWidth="3" strokeLinecap="round" />
-            <path d="M17 6 C35 28 35 72 17 94" fill="none" stroke="#6a2f0c" strokeWidth="3" strokeLinecap="round" />
-            <path d="M83 6 C65 28 65 72 83 94" fill="none" stroke="#6a2f0c" strokeWidth="3" strokeLinecap="round" />
-          </svg>
-        </div>
+        {/* Loading hint stays above canvas until model finishes loading. */}
+        {!isModelLoaded && (
+          <div className="pointer-events-none absolute inset-0 flex items-center justify-center text-xs font-semibold text-black/50">
+            Loading basketball...
+          </div>
+        )}
       </div>
     </div>
   );

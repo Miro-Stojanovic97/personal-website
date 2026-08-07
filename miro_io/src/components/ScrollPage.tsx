@@ -20,6 +20,7 @@ export default function Scroll_Page({ entityName, body, bodyClassName, showStopL
           src="/scroll.png"
           alt="Hand-drawn home scene with clickable sections"
           fill
+          sizes="(max-width: 900px) 100vw, 900px"
           priority
           className=""
         />
