@@ -194,34 +194,6 @@ export default function D20FateRoll() {
       (gltf) => {
         object = gltf.scene;
 
-        // Normalize material response so texture detail stays visible with bright lights.
-        object.traverse((child) => {
-          if (!(child instanceof THREE.Mesh)) {
-            return;
-          }
-
-          const materials = Array.isArray(child.material) ? child.material : [child.material];
-          for (const material of materials) {
-            if (!(material instanceof THREE.MeshStandardMaterial || material instanceof THREE.MeshPhysicalMaterial)) {
-              continue;
-            }
-
-            if (material.map) {
-              material.map.colorSpace = THREE.SRGBColorSpace;
-            }
-
-            material.color.multiplyScalar(1.28);
-            material.envMapIntensity = 1.5;
-            material.metalness = Math.max(material.metalness, 0.38);
-            material.roughness = Math.min(material.roughness, 0.34);
-            if (material instanceof THREE.MeshPhysicalMaterial) {
-              material.clearcoat = Math.max(material.clearcoat, 0.6);
-              material.clearcoatRoughness = Math.min(material.clearcoatRoughness, 0.25);
-            }
-            material.needsUpdate = true;
-          }
-        });
-
         object.scale.setScalar(0.04);
 
         // Set deterministic initial pose with face 20 aimed at the camera.
