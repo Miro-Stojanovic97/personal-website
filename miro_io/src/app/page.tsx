@@ -1,15 +1,22 @@
 "use client";
 
-import { useState } from "react";
+import { useContext, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import Wave from 'react-wavify';
+import { DndContext } from "@/providers/DndProvider";
 
 let discoveryCountInit: number = 0;
 const discoveryList: string[] = [];
 
 export default function Home() {
   const [discoveryCount, setDiscoveryCount] = useState(discoveryCountInit);
+  const DndContextValue = useContext(DndContext);
+  if (!DndContextValue) {
+    throw new Error("DndContext must be used within a DndProvider");
+  }
+  const { isFireActive } = DndContextValue;
+
   const imageAspect = 1954.58 / 1037.96;
 
   function incrementDiscoveryCount(discovery: string) {
@@ -100,7 +107,9 @@ export default function Home() {
         />
         <Link
           id="fire"
-          className="absolute left-[53.3%] top-[64%] w-[2.5%] aspect-square rounded-full bg-transparent transition-colors hover:bg-black/10"
+          className={`${isFireActive ?
+            "absolute left-[53.3%] top-[64%] w-[2.5%] aspect-square rounded-full bg-transparent transition-colors hover:bg-black/10" :
+            "pointer-events-none bg-[#4dabf7]/70 absolute left-[54.05%] top-[65.3%] w-[1%] aspect-square rounded-full"}`}
           href="/email"
           aria-label="Open Contact page"
           onClick={() => incrementDiscoveryCount('fire')}

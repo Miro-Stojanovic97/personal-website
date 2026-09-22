@@ -7,10 +7,10 @@ import Link from "next/link";
 export default function Chess() {
   const entityName = "Chess Board";
   const body = (
-    <>
+    <div className="h-[50vh]" style={{ fontSize: "clamp(0.8rem, min(2.8vw, 2vh), 0.9rem)" }}>
       <h1>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;I&apos;m a gamer, on board and on screen.
         Growing up, I was a big chess fan, even starting a chess club at my high school.
-        Feel free to practice here, and challenge me at my Chess.com profile below:).
+        Feel free to practice here, and I also recommend Chess.com.
         My other favorite board games are Risk, Ticket to Ride, and Catan.
         In terms of video games, some favorites include Red Dead Redemption 2,
         Cyberpunk, NBA2K, CS:GO, and I&apos;m currently enjoying Baldur&apos;s Gate 3.</h1>
@@ -23,9 +23,11 @@ export default function Chess() {
           className="my-2 transition-all hover:-translate-y-1 mx-auto"
         />
       </Link>
-      <Chess_Game />
-    </>
+      <div className="mb-10 overflow-hidden">
+        <Chess_Game />
+      </div>
+    </div>
   );
 
-  return <Scroll_Page entityName={entityName} body={body} bodyClassName="absolute top-[12%] left-[10%] w-[80%] h-[80%] overflow-y-auto p-10" />;
+  return <Scroll_Page entityName={entityName} body={body} bodyClassName="absolute top-[12%] left-[10%] w-[80%] h-[80%] overflow-hidden p-10" />;
 }

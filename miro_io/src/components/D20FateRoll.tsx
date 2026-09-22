@@ -73,10 +73,9 @@ function getCameraFacingUprightQuaternion(face: FacePoint, towardCamera: THREE.V
   );
 }
 
-export default function D20FateRoll() {
+export default function D20FateRoll({ selectedDifficultyCheck, handleResult }: { selectedDifficultyCheck: number | null; handleResult: (result: number | null) => void; }) {
   const modelContainerRef = useRef<HTMLDivElement | null>(null);
   const modelRef = useRef<THREE.Object3D | null>(null);
-  const [result, setResult] = useState<number | null>(null);
   const [isRolling, setIsRolling] = useState(false);
   const [hasRolled, setHasRolled] = useState(false);
   const rollRef = useRef<{
@@ -155,7 +154,6 @@ export default function D20FateRoll() {
 
     // UI state moves to rolling immediately; result is shown after final snap.
     setIsRolling(true);
-    setResult(null);
   };
 
   // Three.js scene setup and render loop lifecycle.
@@ -179,14 +177,22 @@ export default function D20FateRoll() {
 
     camera.position.z = 34;
 
-    // Lighting
-    const frontLight = new THREE.PointLight(0xa31d00, 400, 0, 0);
-    frontLight.position.set(0, 4, 22);
-    scene.add(frontLight);
-
-    const topLight = new THREE.PointLight(0xffffff, 2, 0, 0);
-    topLight.position.set(0, 16, 24);
+    // Gold Lighting
+    const topLight = new THREE.PointLight(0xA37500, 900, 20, 0.2);
+    topLight.position.set(0, 15, 0);
     scene.add(topLight);
+
+    const bottomLight = new THREE.PointLight(0xA37500, 900, 20, 0.2);
+    bottomLight.position.set(0, -15, -5);
+    scene.add(bottomLight);
+
+    const rightLight = new THREE.PointLight(0xA37500, 900, 20, 0.2);
+    rightLight.position.set(15, 0, 10);
+    scene.add(rightLight);
+
+    const leftLight = new THREE.PointLight(0xA37500, 900, 20, 0.2);
+    leftLight.position.set(-15, 0, 10);
+    scene.add(leftLight);
 
 
     loader.load(
@@ -233,8 +239,8 @@ export default function D20FateRoll() {
           object.quaternion.copy(rollRef.current.targetQuaternion);
           // Finalize roll lifecycle and expose result in UI.
           rollRef.current.active = false;
+          handleResult(rollRef.current.value);
           setIsRolling(false);
-          setResult(rollRef.current.value);
           setHasRolled(true);
         }
       }
@@ -268,22 +274,16 @@ export default function D20FateRoll() {
   }, []);
 
   return (
-    <div className="w-full border border-black/20">
-      <h2 className="text-center text-base font-bold">Roll the d20</h2>
-
+    <div className="w-full">
       <button
         type="button"
         onClick={rollDice}
-        className="mt-4 block h-64 w-full cursor-pointer"
+        className="block h-64 w-full cursor-pointer"
         aria-label="Roll the d20"
         disabled={isRolling || hasRolled}
       >
         <div ref={modelContainerRef} className="h-full w-full" />
       </button>
-
-      <div className="mt-3 pb-2 text-center text-sm font-semibold">
-        {isRolling ? "Rolling..." : result ? `Result: ${result}` : "Click the dice to roll"}
-      </div>
     </div>
   );
 }

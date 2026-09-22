@@ -30,17 +30,13 @@ const CAMERA_Z = 12;
 // Downward acceleration (world units / s^2).
 const GRAVITY = 70;
 // Extra spacing above the visual bottom edge so the model does not clip.
-const BOTTOM_CLEARANCE = 0.35;
+const BOTTOM_CLEARANCE = 0.18;
 // Horizontal margin so the model does not clip against left/right edges.
 const SIDE_CLEARANCE = 0.25;
-// Energy retained after floor impacts.
-const FLOOR_BOUNCE = 0.90;
-// Energy retained after side-wall impacts.
-const WALL_BOUNCE = 0.75;
+// Energy retained after impacts.
+const BOUNCE = 0.90;
 // Horizontal speed damping applied on floor impact.
 const FLOOR_FRICTION = 0.94;
-// Per-frame damping for free motion in air.
-const AIR_DRAG = 0.996;
 // Threshold under which motion is considered effectively stopped.
 const REST_SPEED = 0.12;
 // Small vertical rebounds are snapped to zero to avoid jitter.
@@ -394,8 +390,8 @@ export default function BasketballBounce() {
 
         let nextX = positionRef.current.x + velocityRef.current.x * delta;
         let nextY = positionRef.current.y + velocityRef.current.y * delta;
-        let nextVelocityX = velocityRef.current.x * AIR_DRAG;
-        let nextVelocityY = velocityRef.current.y * AIR_DRAG;
+        let nextVelocityX = velocityRef.current.x;
+        let nextVelocityY = velocityRef.current.y;
 
         // Pull current collision bounds snapshot.
         const { left, right, floor, ceiling } = boundsRef.current;
@@ -403,16 +399,16 @@ export default function BasketballBounce() {
         // Left/right wall collisions reflect horizontal velocity with damping.
         if (nextX <= left) {
           nextX = left;
-          nextVelocityX = Math.abs(nextVelocityX) * WALL_BOUNCE;
+          nextVelocityX = Math.abs(nextVelocityX) * BOUNCE;
         } else if (nextX >= right) {
           nextX = right;
-          nextVelocityX = -Math.abs(nextVelocityX) * WALL_BOUNCE;
+          nextVelocityX = -Math.abs(nextVelocityX) * BOUNCE;
         }
 
         // Ceiling remains available even though it is configured as infinity.
         if (nextY >= ceiling) {
           nextY = ceiling;
-          nextVelocityY = -Math.abs(nextVelocityY) * WALL_BOUNCE;
+          nextVelocityY = -Math.abs(nextVelocityY) * BOUNCE;
         }
 
         // Floor collision adds bounce loss, friction, and spin impulse.
@@ -422,8 +418,8 @@ export default function BasketballBounce() {
 
           // Gradually reduce bounce strength across repeated impacts.
           const floorBounce = bounceCountRef.current > 1
-            ? Math.max(0.45, FLOOR_BOUNCE - ((bounceCountRef.current - 1) * 0.04))
-            : FLOOR_BOUNCE;
+            ? Math.max(0.45, BOUNCE - ((bounceCountRef.current - 1) * 0.04))
+            : BOUNCE;
 
           nextVelocityY = Math.abs(nextVelocityY) * floorBounce;
           nextVelocityX *= FLOOR_FRICTION;
@@ -434,10 +430,6 @@ export default function BasketballBounce() {
             nextVelocityY = 0;
           }
         }
-
-        // Apply global damping after collisions.
-        nextVelocityX *= AIR_DRAG;
-        nextVelocityY *= AIR_DRAG;
 
         // If motion is tiny on the floor, settle fully.
         const nearFloor = nextY <= floor + 0.02;

@@ -6,10 +6,10 @@ import Link from "next/link";
 export default function Welcome() {
   const entityName = "Shoreline";
   const body = (
-    <>
+    <div style={{ fontSize: "clamp(0.8rem, min(2.8vw, 2vh), 1.1rem)" }}>
       <h1>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Welcome to my website! My name is Miro.<br/>
         I&apos;m a software engineer based in Milwaukee, Wisconsin. If you&apos;d like to contact me
-        directly from here, you best find a way off this Island.
+        directly from here, keep exploring the Island.
       </h1><br/>
 
       <h1>
@@ -28,8 +28,8 @@ export default function Welcome() {
           className="mx-auto border-2 border-black rounded-xl mt-4 transition-all hover:-translate-y-0.5 hover:bg-[#fff7eb]"
         />
       </Link>
-    </>
+    </div>
   );
 
-  return <Scroll_Page entityName={entityName} body={body} bodyClassName="absolute top-[12%] left-[10%] w-[80%] h-[80%] overflow-y-auto p-10" />;
+  return <Scroll_Page entityName={entityName} body={body} bodyClassName="absolute top-[12%] left-[10%] w-[80%] h-[80%] overflow-y-auto p-10 " />;
 }
